@@ -1,0 +1,41 @@
+groups:
+- name: cpu_alerts
+  rules:
+  # ---------- Overall CPU utilization (all cores averaged) ----------
+  - alert: HighCPUOverallWarning
+    expr: 100 * (1 - avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m]))) > 75
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Overall CPU > 75% on {{ $labels.instance }}"
+      description: "Average CPU utilization across all cores > 75% for 5m (current: {{ $value }}%)."
+
+  - alert: HighCPUOverallCritical
+    expr: 100 * (1 - avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m]))) > 90
+    for: 2m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Overall CPU > 90% on {{ $labels.instance }}"
+      description: "Average CPU utilization across all cores > 90% for 2m (current: {{ $value }}%)."
+
+  # ---------- Per-core CPU utilization (any single core hot) ----------
+  - alert: HighCPUPerCoreWarning
+    expr: 100 * (1 - rate(node_cpu_seconds_total{mode="idle"}[5m])) > 85
+    for: 3m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Core hot (>85%) on {{ $labels.instance }} (cpu {{ $labels.cpu }})"
+      description: "CPU core {{ $labels.cpu }} utilization > 85% for 3m (current: {{ $value }}%)."
+
+  - alert: HighCPUPerCoreCritical
+    expr: 100 * (1 - rate(node_cpu_seconds_total{mode="idle"}[5m])) > 95
+    for: 2m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Core very hot (>95%) on {{ $labels.instance }} (cpu {{ $labels.cpu }})"
+      description: "CPU core {{ $labels.cpu }} utilization > 95% for 2m (current: {{ $value }}%)."
+
