@@ -1,0 +1,34 @@
+Step 1: 
+Download the prometheus jms
+wget https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/0.19.0/jmx_prometheus_javaagent-0.19.0.jar
+Step 2: 
+Create jmx_config.yaml
+cat > jmx_config.yaml << 'EOF'
+rules:
+- pattern: ".*"
+EOF
+
+Add Java options in serenv.sh
+cat > bin/setenv.sh << 'EOF'
+#!/bin/sh
+export JAVA_OPTS="$JAVA_OPTS -javaagent:/path/to/tomcat/jmx_prometheus_javaagent-0.19.0.jar=8080:/path/to/tomcat/jmx_config.yaml"
+EOF
+
+Start Tomcat
+check if matrics is comming or not.
+http://<server ip>:<port>/metrics
+Step 3:
+Verify if prometheus JMX is running or not
+ps aux | grep java | grep -i jmx_prometheus
+
+Step 4:
+Add job for tomcat in prometheus.yml
+scrape_configs:
+  - job_name: tomcat
+    static_configs:
+      - targets: ['tomcat-host:<port configired in Tomcat>']
+    metrics_path: /metrics   # usually /metrics for jmx_exporter
+    scrape_interval: 15s
+Step 5:
+Restart Prometheus
+sudo systemctl restart prometheus.service
