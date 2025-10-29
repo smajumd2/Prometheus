@@ -2,11 +2,105 @@ Step 1:
 Download the prometheus jmx
 wget https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/0.19.0/jmx_prometheus_javaagent-0.19.0.jar
 Step 2: 
-Create jmx_config.yaml
-cat > jmx_config.yaml << 'EOF'
+Create jmx_config.yaml andd below lines accordingly
+for Apache tomcat 11
+---
+startDelaySeconds: 0
+ssl: false
+lowercaseOutputName: true
+lowercaseOutputLabelNames: true
+
 rules:
-- pattern: ".*"
-EOF
+  # Thread pool metrics
+  - pattern: '.*<type=ThreadPool, name=(.+)><>currentThreadCount'
+    name: tomcat_threadpool_threads_current
+    labels:
+      name: "$1"
+    type: GAUGE
+    help: Current thread count in Tomcat thread pool
+  - pattern: '.*<type=ThreadPool, name=(.+)><>currentThreadsBusy'
+    name: tomcat_threadpool_threads_busy
+    labels:
+      name: "$1"
+    type: GAUGE
+    help: Busy threads in Tomcat thread pool
+
+  # Global request processor
+  - pattern: '.*<type=GlobalRequestProcessor, name=(.+)><>requestCount'
+    name: tomcat_global_request_total
+    labels:
+      name: "$1"
+    type: COUNTER
+    help: Total number of requests processed
+  - pattern: '.*<type=GlobalRequestProcessor, name=(.+)><>bytesSent'
+    name: tomcat_global_bytes_sent_total
+    labels:
+      name: "$1"
+    type: COUNTER
+    help: Total bytes sent
+  - pattern: '.*<type=GlobalRequestProcessor, name=(.+)><>bytesReceived'
+    name: tomcat_global_bytes_received_total
+    labels:
+      name: "$1"
+    type: COUNTER
+    help: Total bytes received
+  - pattern: '.*<type=GlobalRequestProcessor, name=(.+)><>processingTime'
+    name: tomcat_global_processing_time_seconds
+    labels:
+      name: "$1"
+    type: COUNTER
+    help: Total processing time in seconds
+
+  # Servlet metrics
+  - pattern: '.*<type=Servlet, context=(.+), name=(.+)><>processingTime'
+    name: tomcat_servlet_processing_time_seconds
+    labels:
+      context: "$1"
+      servlet: "$2"
+    type: COUNTER
+    help: Total processing time per servlet
+  - pattern: '.*<type=Servlet, context=(.+), name=(.+)><>requestCount'
+    name: tomcat_servlet_requests_total
+    labels:
+      context: "$1"
+      servlet: "$2"
+    type: COUNTER
+    help: Total number of requests per servlet
+
+  # Cache metrics
+  - pattern: '.*<type=StringCache><>accessCount'
+    name: tomcat_string_cache_access_total
+    type: COUNTER
+  - pattern: '.*<type=StringCache><>hitCount'
+    name: tomcat_string_cache_hit_total
+    type: COUNTER
+
+  # Catch-all for any numeric attribute not covered above
+  - pattern: '.*'
+    name: jmx_$0
+    type: GAUGE
+
+
+For Apache 9/10.1
+rules:
+  - pattern: 'Catalina<type=GlobalRequestProcessor, name=(.+)><>requestCount'
+    name: tomcat_request_count
+    type: COUNTER
+    help: Number of requests processed
+  - pattern: 'Catalina<type=GlobalRequestProcessor, name=(.+)><>bytesSent'
+    name: tomcat_bytes_sent
+    type: COUNTER
+    help: Bytes sent by the connector
+  - pattern: 'Catalina<type=ThreadPool, name=(.+)><>currentThreadsBusy'
+    name: tomcat_threads_busy
+    type: GAUGE
+    help: Current busy threads
+  - pattern: 'Catalina<type=ThreadPool, name=(.+)><>currentThreadCount'
+    name: tomcat_thread_count
+    type: GAUGE
+    help: Current thread count
+
+
 
 Add Java options in serenv.sh
 cat > bin/setenv.sh << 'EOF'
