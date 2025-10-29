@@ -105,7 +105,7 @@ rules:
 Add Java options in serenv.sh
 cat > bin/setenv.sh << 'EOF'
 #!/bin/sh
-export JAVA_OPTS="$JAVA_OPTS -javaagent:/path/to/tomcat/jmx_prometheus_javaagent-0.19.0.jar=8080:/path/to/tomcat/jmx_config.yaml"
+export JAVA_OPTS="$JAVA_OPTS -javaagent:/path/to/tomcat/jmx_prometheus_javaagent-0.19.0.jar=<port on which you want to see metrics. Should not be Tomcat port>:/path/to/tomcat/jmx_config.yaml"
 EOF
 
 Start Tomcat
@@ -120,7 +120,7 @@ Add job for tomcat in prometheus.yml
 scrape_configs:
   - job_name: tomcat
     static_configs:
-      - targets: ['tomcat-host:<port configired in Tomcat>']
+      - targets: ['tomcat-host:<port dedicated for metrics not tomcat default port>']
     metrics_path: /metrics   # usually /metrics for jmx_exporter
     scrape_interval: 15s
 Step 5:
